@@ -1,85 +1,137 @@
 import numpy as np
 
-def pivoting(A):
+def is_diagonally_dominant(A):
     n = A.shape[0]
     for i in range(n):
-        max_row = np.argmax(np.abs(A[i:n, i])) + i
-        if max_row != i:
-            A[[i, max_row]] = A[[max_row, i]]
-    return A
-
-def check_diagonal_dominance(A):
-    n = A.shape[0]
-    for i in range(n):
-        row_sum = np.sum(np.abs(A[i, :])) - np.abs(A[i, i])
-        if np.abs(A[i, i]) <= row_sum:
+        row_sum = np.sum(np.abs(A[i, :])) - abs(A[i, i])
+        if abs(A[i, i]) <= row_sum:
             return False
     return True
 
-def jacobi_iteration(A, b, X_r, epsilon):
+def pivot_for_diagonal_dominance(A, b):
     n = A.shape[0]
-    X_r1 = np.copy(X_r)
+    A = A.copy()
+    b = b.copy()
     for i in range(n):
-        sum_ = 0
-        for j in range(n):
-            if i != j:
-                sum_ += A[i, j] * X_r[j]
-        X_r1[i] = (b[i] - sum_) / A[i, i]
-    return X_r1
+        max_row = np.argmax(np.abs(A[i:, i])) + i
+        if max_row != i:
+            A[[i, max_row]] = A[[max_row, i]]
+            b[[i, max_row]] = b[[max_row, i]]
+    return A, b
 
-def gauss_seidel_iteration(A, b, X_r, epsilon):
+def jacobi_iteration(A, b, x_current):
     n = A.shape[0]
-    X_r1 = np.copy(X_r)
+    x_new = np.copy(x_current)
     for i in range(n):
-        sum_ = 0
-        for j in range(n):
-            if i != j:
-                sum_ += A[i, j] * X_r1[j]
-        X_r1[i] = (b[i] - sum_) / A[i, i]
-    return X_r1
+        s = np.sum(A[i, :] * x_current) - A[i, i] * x_current[i]
+        x_new[i] = (b[i] - s) / A[i, i]
+    return x_new
 
-def solve_system(A, b, epsilon=0.001, max_iter=1000, method='jacobi'):
+def gauss_seidel_iteration(A, b, x_current):
     n = A.shape[0]
-    X_r = np.zeros(n)
-    X_r1 = np.ones(n)
-    num_of_runs = 0
+    x_new = np.copy(x_current)
+    for i in range(n):
+        s = 0
+        for j in range(n):
+            if j != i:
+                s += A[i, j] * x_new[j]
+        x_new[i] = (b[i] - s) / A[i, i]
+    return x_new
 
-    if method == 1:
-        iteration_func = jacobi_iteration
-    elif method == 2:
-        iteration_func = gauss_seidel_iteration
+def jacobi_solver(A, b, epsilon=1e-3, max_iter=1000):
+    print("=== Jacobi Method ===")
+    if is_diagonally_dominant(A):
+        print("Matrix is already diagonally dominant.")
+        diag_dom = True
     else:
-        raise ValueError("Method must be 1 (jacobi) or 2 (gauss_seidel)")
+        print("Matrix is not diagonally dominant. Attempting to reorder...")
+        A_reordered, b_reordered = pivot_for_diagonal_dominance(A, b)
+        if is_diagonally_dominant(A_reordered):
+            print("Successfully obtained a diagonally dominant matrix via row swaps.")
+            A, b = A_reordered, b_reordered
+            diag_dom = True
+        else:
+            print("Still not diagonally dominant after row swaps.")
+            A, b = A_reordered, b_reordered
+            diag_dom = False
 
-    while np.linalg.norm(X_r1 - X_r, ord=np.inf) > epsilon and num_of_runs < max_iter:
-        num_of_runs += 1
-        X_r = np.copy(X_r1)
-        X_r1 = iteration_func(A, b, X_r, epsilon)
-        print(f"Iteration {num_of_runs}: X_r = {X_r1}")
+    x = np.zeros_like(b).flatten()
+    for k in range(1, max_iter + 1):
+        x_new = jacobi_iteration(A, b, x)
+        print(f"Iteration {k}: x = {x_new}")
 
-    if np.linalg.norm(X_r1 - X_r, ord=np.inf) <= epsilon:
-        print(f"Converged solution after {num_of_runs} iterations: {X_r1}")
-        return X_r1
+        if np.linalg.norm(x_new - x, ord=np.inf) < epsilon:
+            if diag_dom:
+                print(f"Converged in {k} iterations (Jacobi, diagonally dominant).")
+            else:
+                print(f"Converged in {k} iterations (Jacobi) despite NOT being diagonally dominant.")
+            return x_new
+        x = x_new
+
+    # If we get here, we did not converge within max_iter
+    print("Jacobi method did NOT converge within the maximum number of iterations.")
+    return None
+
+
+def gauss_seidel_solver(A, b, epsilon=1e-3, max_iter=1000):
+    print("=== Gauss-Seidel Method ===")
+    if is_diagonally_dominant(A):
+        print("Matrix is already diagonally dominant.")
+        diag_dom = True
     else:
-        print(f"Did not converge after {num_of_runs} iterations.")
-        return None
+        print("Matrix is not diagonally dominant. Attempting to reorder...")
+        A_reordered, b_reordered = pivot_for_diagonal_dominance(A, b)
 
-A = np.array([[1, 2, 4],
-              [1,3,3],
-              [5,2,1]], dtype=float)
+        if is_diagonally_dominant(A_reordered):
+            print("Successfully obtained a diagonally dominant matrix via row swaps.")
+            A, b = A_reordered, b_reordered
+            diag_dom = True
+        else:
+            print("Still not diagonally dominant after row swaps.")
+            A, b = A_reordered, b_reordered
+            diag_dom = False
 
-b = np.array([15, 10, 10], dtype=float)
+    # Now run the Gauss-Seidel iteration
+    x = np.zeros_like(b).flatten()
+    for k in range(1, max_iter + 1):
+        x_new = gauss_seidel_iteration(A, b, x)
+        print(f"Iteration {k}: x = {x_new}")
 
-A = pivoting(A)
+        # Check convergence
+        if np.linalg.norm(x_new - x, ord=np.inf) < epsilon:
+            if diag_dom:
+                print(f"Converged in {k} iterations (Gauss-Seidel, diagonally dominant).")
+            else:
+                print(f"Converged in {k} iterations (Gauss-Seidel) despite NOT being diagonally dominant.")
+            return x_new
+        x = x_new
 
-if check_diagonal_dominance(A):
-    print("Matrix is diagonally dominant.")
-else:
-    print("Matrix is not diagonally dominant.")
-    print("not diagonal")
+    # If we get here, we did not converge within max_iter
+    print("Gauss-Seidel method did NOT converge within the maximum number of iterations.")
+    return None
 
-method_choice = int(input("Choose method (1 for Jacobi, 2 for Gauss-Seidel): "))
+if __name__ == "__main__":
+    # Example matrix and vector
+    A = np.array([
+        [4, 2, 0],
+        [2, 10, 4],
+        [0, 4, 5]
+    ], dtype=float)
+    b = np.array([2, 6, 5], dtype=float)
 
-solution = solve_system(A, b, method=method_choice)
-if solution is not None:
-    print(f"Solved using method {method_choice}.")
+    print("Choose the method you want to use:")
+    print("1) Jacobi")
+    print("2) Gauss-Seidel")
+
+    choice = input("Enter your choice (1 or 2): ").strip()
+
+    if choice == '1':
+        x_solution = jacobi_solver(A, b, epsilon=1e-4, max_iter=100)
+        if x_solution is not None:
+            print("Solution (Jacobi):", x_solution)
+    elif choice == '2':
+        x_solution = gauss_seidel_solver(A, b, epsilon=1e-4, max_iter=100)
+        if x_solution is not None:
+            print("Solution (Gauss-Seidel):", x_solution)
+    else:
+        print("Invalid choice. Please enter 1 for Jacobi or 2 for Gauss-Seidel.")
