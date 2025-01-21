@@ -2,7 +2,7 @@
 import math
 import numpy as np
 
-
+#NEEDS REFACTORING
 def romberg_integration(func, a, b, n):
 
     h = b - a
