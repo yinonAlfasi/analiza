@@ -1,14 +1,11 @@
 import sympy
-import math
+
 
 # -----------------------------------------------------------
 # 1. Bisection Method
 # -----------------------------------------------------------
 def bisection_method(polynomial, start_point, end_point, epsilon=1e-10):
-    """
-    Implements the Bisection Method to find a root of a polynomial.
-    Prints iteration details for each step.
-    """
+
     if polynomial(start_point) * polynomial(end_point) > 0:
         print(f"No sign change found between x={start_point} and x={end_point} for the bisection method.")
         return None, None
@@ -42,10 +39,7 @@ def bisection_method(polynomial, start_point, end_point, epsilon=1e-10):
 # 2. Newton-Raphson Method
 # -----------------------------------------------------------
 def newton_raphson_method(polynomial, derivative, start_point, end_point, epsilon=1e-10, max_iter=1000):
-    """
-    Implements the Newton-Raphson Method to find a root of a polynomial.
-    Prints iteration details for each step.
-    """
+
     x_current = (start_point + end_point) / 2.0
     iterations = 0
 
@@ -85,10 +79,7 @@ def newton_raphson_method(polynomial, derivative, start_point, end_point, epsilo
 # 3. Secant Method
 # -----------------------------------------------------------
 def secant_method(polynomial, start_point, end_point, epsilon=1e-10, max_iter=1000):
-    """
-    Implements the Secant Method to find a root of a polynomial.
-    Prints iteration details for each step.
-    """
+
     x0 = start_point
     x1 = end_point
 
