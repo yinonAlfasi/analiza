@@ -3,6 +3,7 @@ import numpy as np
 
 #code was refactored on the original code that was provided in the course together with the samples of pseudocode.
 #rewriting was made with the use of copilot and some hand made changes to make the code more readable and understandable.
+#exxesive comments were removed and the code was made more compact.
 def romberg_integration(func, a, b, n):
 
     h = b - a
