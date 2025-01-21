@@ -1,4 +1,5 @@
 ------------------Numeric Analysis------------------
+
 Methods we have in our disposal:
 
 Liner system solver- jacobi, gauss-seidel
